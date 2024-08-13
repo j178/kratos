@@ -135,8 +135,7 @@ func EncodeField(fieldDescriptor protoreflect.FieldDescriptor, value protoreflec
 		if fieldDescriptor.Enum().FullName() == "google.protobuf.NullValue" {
 			return nullStr, nil
 		}
-		desc := fieldDescriptor.Enum().Values().ByNumber(value.Enum())
-		return string(desc.Name()), nil
+		return strconv.FormatInt(int64(value.Enum()), 10), nil
 	case protoreflect.BytesKind:
 		return base64.URLEncoding.EncodeToString(value.Bytes()), nil
 	case protoreflect.MessageKind, protoreflect.GroupKind:
