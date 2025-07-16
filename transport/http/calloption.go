@@ -21,6 +21,7 @@ type callInfo struct {
 	operation     string
 	pathTemplate  string
 	headerCarrier *http.Header
+	verbatimUrl   string
 }
 
 // EmptyCallOption does not alter the Call configuration.
@@ -112,4 +113,21 @@ func (o HeaderCallOption) after(_ *callInfo, cs *csAttempt) {
 	if cs.res != nil && cs.res.Header != nil {
 		*o.header = cs.res.Header
 	}
+}
+
+// VerbatimUrl sets the URL for the client call verbatim, overriding the default
+// URL and any discovery mechanism.
+func VerbatimUrl(url string) CallOption {
+	return VerbatimUrlCallOption{url: url}
+}
+
+// VerbatimUrlCallOption is for setting the URL for the request.
+type VerbatimUrlCallOption struct {
+	EmptyCallOption
+	url string
+}
+
+func (o VerbatimUrlCallOption) before(c *callInfo) error {
+	c.verbatimUrl = o.url
+	return nil
 }

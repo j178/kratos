@@ -226,7 +226,14 @@ func (client *Client) Invoke(ctx context.Context, method, path string, args any,
 		contentType = c.contentType
 		body = bytes.NewReader(data)
 	}
-	url := fmt.Sprintf("%s://%s%s", client.target.Scheme, client.target.Authority, path)
+	var url string
+	verbatimUrl := false
+	if c.verbatimUrl != "" {
+		url = c.verbatimUrl
+		verbatimUrl = true
+	} else {
+		url = fmt.Sprintf("%s://%s%s", client.target.Scheme, client.target.Authority, path)
+	}
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return err
@@ -248,12 +255,12 @@ func (client *Client) Invoke(ctx context.Context, method, path string, args any,
 		request:      req,
 		pathTemplate: c.pathTemplate,
 	})
-	return client.invoke(ctx, req, args, reply, c, opts...)
+	return client.invoke(ctx, req, args, reply, c, verbatimUrl, opts...)
 }
 
-func (client *Client) invoke(ctx context.Context, req *http.Request, args any, reply any, c callInfo, opts ...CallOption) error {
+func (client *Client) invoke(ctx context.Context, req *http.Request, args any, reply any, c callInfo, verbatimUrl bool, opts ...CallOption) error {
 	h := func(ctx context.Context, _ any) (any, error) {
-		res, err := client.do(req.WithContext(ctx))
+		res, err := client.do(req.WithContext(ctx), verbatimUrl)
 		if res != nil {
 			cs := csAttempt{res: res}
 			for _, o := range opts {
@@ -288,12 +295,12 @@ func (client *Client) Do(req *http.Request, opts ...CallOption) (*http.Response,
 		}
 	}
 
-	return client.do(req)
+	return client.do(req, false)
 }
 
-func (client *Client) do(req *http.Request) (*http.Response, error) {
+func (client *Client) do(req *http.Request, verbatimUrl bool) (*http.Response, error) {
 	var done func(context.Context, selector.DoneInfo)
-	if client.r != nil {
+	if client.r != nil && !verbatimUrl {
 		var (
 			err  error
 			node selector.Node
